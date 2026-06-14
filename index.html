@@ -271,6 +271,14 @@
       .seg.us-reg {
         background: var(--us);
       }
+      /* 週末/假日：該市場色塊轉灰（實際沒開市） */
+      .track.off .seg {
+        background: var(--line);
+        color: var(--muted);
+      }
+      .track.off .seg small {
+        opacity: 0.6;
+      }
       .axis {
         position: relative;
         height: 20px;
@@ -609,7 +617,18 @@
         applyStatus(usStatus, "美股", marketStatusUs(us));
 
         updateNowLine(tw);
+        updateDialClosed(tw);
         updateCountdown(now);
+      }
+
+      // 面板當前代表的交易日：軸從 09:00 起，<09:00 屬前一天場次
+      function updateDialClosed(p) {
+        const d = new Date(`${p.year}-${p.month}-${p.day}T00:00:00`);
+        if (+p.hour < 9) d.setDate(d.getDate() - 1);
+        const key = ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        const weekend = d.getDay() === 0 || d.getDay() === 6;
+        twTrack.classList.toggle("off", weekend || TW_CLOSED.has(key));
+        usTrack.classList.toggle("off", weekend || US_CLOSED.has(key));
       }
 
       function dow(p) {
