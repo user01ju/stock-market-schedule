@@ -11,7 +11,9 @@
   - 假日：`date.nager.at`（NYSE／TWSE）+ Good Friday 計算。
   - 規則性計算：三巫日、台指期結算、非農、初領失業金。
   - 官方排程：FOMC。
-  - 來源：財報／IPO（Finnhub）、CPI／PPI／零售（BLS／Census iCal）。
+  - 來源：財報／IPO（Finnhub，經 Worker 代理隱藏 key）、CPI／PPI／零售（BLS／Census iCal，放 `calendars/`）。
+
+> **BLS/Census 經 Worker 實測被 Akamai 擋（403）**，故 CPI/PPI/零售改走本地 `.ics`（見 `calendars/README.md`）。`CONFIG.PROXY` 仍照填，Finnhub 走 Worker、ics 走本地，前端會兩條都試並去重。
 
 ## 直接用
 
