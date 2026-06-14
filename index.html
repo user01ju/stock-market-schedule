@@ -793,13 +793,18 @@
         const gfKey = ymd(gf.getUTCFullYear(), gf.getUTCMonth() + 1, gf.getUTCDate());
         US_CLOSED.add(gfKey);
         out.push({ date: gfKey, market: "us", type: "holiday", time: "休市", title: "🇺🇸 Good Friday" });
+        // 台灣：Nager 不支援，改用政府辦公日曆表（ruyut/TaiwanCalendar，走 jsDelivr CDN，有 CORS）
         try {
           const tw = await fetch(
-            `https://date.nager.at/api/v3/PublicHolidays/${year}/TW`
-          ).then((r) => r.json());
-          for (const h of tw) {
-            TW_CLOSED.add(h.date);
-            out.push({ date: h.date, market: "tw", type: "holiday", time: "休市", title: `🇹🇼 ${h.localName}` });
+            `https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${year}.json`
+          ).then((r) => (r.ok ? r.json() : null));
+          for (const x of tw || []) {
+            if (!x.isHoliday) continue; // 含補班日(isHoliday=false)自動排除
+            const date = `${x.date.slice(0, 4)}-${x.date.slice(4, 6)}-${x.date.slice(6, 8)}`;
+            TW_CLOSED.add(date);
+            // 只把「有名稱」的假日放進行事曆（週末無描述者不洗版）
+            if (x.description)
+              out.push({ date, market: "tw", type: "holiday", time: "休市", title: `🇹🇼 ${x.description}` });
           }
         } catch (e) {}
         return out;
@@ -1014,7 +1019,7 @@
           getOffset("America/New_York", new Date());
         foot.innerHTML =
           `${y} 美東夏令時間（EDT）：<b>${fmt(us.start)} – ${fmt(us.end)}</b>（由瀏覽器時區庫動態判定，每年自動更新）。目前台北快美東 ${diff} 小時。<br/>` +
-          "資料來源：假日 date.nager.at（NYSE/TWSE）、財報/IPO Finnhub。規則性事件程式計算：三巫日、台指期結算、非農(首週五)、初領失業金(每週四)。無規則事件照官方排程：FOMC。Finnhub 免費方案不含經濟日曆；CPI/PPI/零售改用 BLS/Census 官方 iCal（放 calendars/，同源讀取，詳見該資料夾 README）。時刻 ET=美東當地，會自動隨 DST。";
+          "資料來源：美股假日 date.nager.at、台股假日 政府辦公日曆表(ruyut/TaiwanCalendar)、財報/IPO Finnhub。規則性事件程式計算：三巫日、台指期結算、非農(首週五)、初領失業金(每週四)。無規則事件照官方排程：FOMC。Finnhub 免費方案不含經濟日曆；CPI/PPI/零售改用 BLS/Census 官方 iCal（放 calendars/，同源讀取，詳見該資料夾 README）。時刻 ET=美東當地，會自動隨 DST。";
       }
 
       // ---------- init ----------
