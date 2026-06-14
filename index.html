@@ -424,6 +424,9 @@
         ],
         // PROXY 留空：改讀本地手動下載的 .ics（見 calendars/README.md）
         ICS_FILES: ["./calendars/bls.ics", "./calendars/cpi.ics", "./calendars/ppi.ics", "./calendars/retail.ics"],
+        // ics 事件白名單：只留標題含這些字的（避免 bls.ics 一堆次要數據洗版）。
+        // 非農已由規則算出，這裡不放 Employment Situation 以免重複。清空陣列=全留。
+        ICS_KEEP: ["Consumer Price Index", "Producer Price Index"],
       };
 
       // FOMC 利率決議日（官方公告之會議第二天，無公式、僅能照 Fed 排程）。
@@ -810,7 +813,9 @@
           try {
             const txt = await fetch(url).then((r) => (r.ok ? r.text() : null));
             if (!txt || !txt.includes("VEVENT")) continue;
+            const keep = CONFIG.ICS_KEEP || [];
             for (const e of parseIcs(txt)) {
+              if (keep.length && !keep.some((w) => e.title.includes(w))) continue;
               const k = e.date + e.title;
               if (seen.has(k)) continue;
               seen.add(k);
