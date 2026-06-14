@@ -623,9 +623,22 @@
         const key = `${p.year}-${p.month}-${p.day}`;
         const w = dow(p);
         const min = +p.hour * 60 + +p.minute;
+        const todayTrading = w !== 0 && w !== 6 && !TW_CLOSED.has(key);
+        // 日盤 09:00–13:30
+        if (todayTrading && min >= 540 && min < 810)
+          return { cls: "live", txt: "日盤開盤中" };
+        // 夜盤傍晚段 15:00–24:00：須當天是交易日
+        if (todayTrading && min >= 900) return { cls: "ext", txt: "期貨夜盤" };
+        // 夜盤凌晨段 00:00–05:00：屬「前一天」的場次，須前一天是交易日
+        if (min < 300) {
+          const d = new Date(`${key}T00:00:00`);
+          d.setDate(d.getDate() - 1);
+          const pk = ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+          const pw = d.getDay();
+          if (pw !== 0 && pw !== 6 && !TW_CLOSED.has(pk))
+            return { cls: "ext", txt: "期貨夜盤" };
+        }
         if (w === 0 || w === 6 || TW_CLOSED.has(key)) return { cls: "", txt: "休市" };
-        if (min >= 540 && min < 810) return { cls: "live", txt: "日盤開盤中" };
-        if (min >= 900 || min < 300) return { cls: "ext", txt: "期貨夜盤" };
         return { cls: "", txt: "收盤" };
       }
       function marketStatusUs(p) {
