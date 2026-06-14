@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>美股市場時間與行事曆</title>
+    <style>
+      :root {
+        --bg: #0e1116;
+        --panel: #161b22;
+        --panel-2: #1c232d;
+        --line: #2a323d;
+        --text: #e6edf3;
+        --muted: #8b97a6;
+        --tw: #f0a020;
+        --us: #3fa7ff;
+        --now: #ff3b3b;
+        --green: #2ecc71;
+        --radius: 14px;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, "Segoe UI", "Noto Sans TC", system-ui,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        padding: 28px 20px 60px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+        margin-bottom: 18px;
+        text-align: center;
+      }
+      .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin: 34px 0 14px;
+      }
+
+      /* ---- 雙時鐘 ---- */
+      .clocks {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 16px;
+      }
+      .clock {
+        background: var(--panel);
+        border-radius: var(--radius);
+        padding: 24px 26px;
+        border-top: 3px solid var(--tw);
+      }
+      .clock.us {
+        border-top-color: var(--us);
+        text-align: right;
+      }
+      .clock .zone {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .clock.us .zone {
+        justify-content: flex-end;
+      }
+      .clock .tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: var(--panel-2);
+        color: var(--text);
+      }
+      .clock .time {
+        font-size: 52px;
+        font-weight: 800;
+        line-height: 1.05;
+        margin: 10px 0 4px;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 1px;
+      }
+      .clock .date {
+        font-size: 15px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .clocks .arrow {
+        color: var(--line);
+        font-size: 26px;
+      }
+
+      /* ---- 倒數 ---- */
+      .countdown {
+        margin-top: 14px;
+        background: var(--panel);
+        border-radius: var(--radius);
+        padding: 16px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .countdown b {
+        font-size: 22px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 1px;
+      }
+      .countdown .pill {
+        font-size: 12px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+      }
+      .pill.open {
+        background: rgba(46, 204, 113, 0.18);
+        color: var(--green);
+      }
+      .pill.pre {
+        background: rgba(255, 59, 59, 0.16);
+        color: var(--now);
+      }
+
+      /* ---- 時間軸 ---- */
+      .dial {
+        background: var(--panel);
+        border-radius: var(--radius);
+        padding: 26px 24px 18px;
+      }
+      .tracks {
+        position: relative;
+      }
+      .dial-row {
+        position: relative;
+        margin-bottom: 14px;
+      }
+      .track {
+        position: relative;
+        height: 40px;
+        background: var(--panel-2);
+        border-radius: 7px;
+      }
+      .dial-label {
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 4;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        padding: 3px 9px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.4);
+      }
+      .dial-label.tw {
+        color: var(--tw);
+      }
+      .dial-label.us {
+        color: var(--us);
+      }
+      .seg {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #0e1116;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        white-space: nowrap;
+        padding: 0 4px;
+        line-height: 1.25;
+      }
+      .seg small {
+        font-weight: 600;
+        opacity: 0.8;
+        font-size: 10.5px;
+      }
+      .seg.tw {
+        background: var(--tw);
+      }
+      .seg.tw.night {
+        background: #c47e10;
+        color: #fff;
+      }
+      .seg.us-pre,
+      .seg.us-post {
+        background: #1e5f9e;
+        color: #fff;
+      }
+      .seg.us-reg {
+        background: var(--us);
+      }
+      .axis {
+        position: relative;
+        height: 20px;
+        margin-top: 4px;
+      }
+      .tick {
+        position: absolute;
+        top: 0;
+        transform: translateX(-50%);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      /* 紅線：只覆蓋 .tracks（兩條軌道），不延伸到刻度/圖例 */
+      .nowline {
+        position: absolute;
+        top: -4px;
+        bottom: 4px;
+        width: 2px;
+        background: var(--now);
+        z-index: 6;
+        box-shadow: 0 0 8px var(--now);
+        pointer-events: none;
+      }
+      .nowline::before {
+        content: "";
+        position: absolute;
+        top: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--now);
+      }
+      .nowline .lbl {
+        position: absolute;
+        top: -22px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        background: var(--now);
+        padding: 1px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .legend {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 16px;
+      }
+      .legend span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+      }
+
+      /* ---- 行事曆 ---- */
+      .cal {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+      }
+      @media (max-width: 760px) {
+        .cal {
+          grid-template-columns: 1fr;
+        }
+        .clocks {
+          grid-template-columns: 1fr;
+        }
+        .clock.us {
+          text-align: left;
+        }
+        .clock.us .zone {
+          justify-content: flex-start;
+        }
+        .clocks .arrow {
+          display: none;
+        }
+      }
+      .day {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 12px 12px 14px;
+        min-height: 130px;
+        border-top: 3px solid var(--line);
+      }
+      .day.today {
+        border-top-color: var(--green);
+        box-shadow: 0 0 0 1px var(--green) inset;
+      }
+      .day.closed {
+        border-top-color: var(--now);
+      }
+      .day .dnum {
+        font-size: 24px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .day .dwk {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .ev {
+        font-size: 11.5px;
+        line-height: 1.35;
+        padding: 4px 7px;
+        border-radius: 6px;
+        margin-bottom: 5px;
+        background: var(--panel-2);
+        border-left: 3px solid var(--line);
+      }
+      .ev.tw {
+        border-left-color: var(--tw);
+      }
+      .ev.us {
+        border-left-color: var(--us);
+      }
+      .ev.holiday {
+        border-left-color: var(--now);
+        font-weight: 700;
+      }
+      .ev .t {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .foot {
+        margin-top: 26px;
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>美股市場時間 · 台美對照 · 行事曆</h1>
+
+    <div class="clocks">
+      <div class="clock tw">
+        <div class="zone">台北 TAIPEI <span class="tag">UTC+8</span></div>
+        <div class="time" id="twTime">--:--:--</div>
+        <div class="date" id="twDate">----</div>
+      </div>
+      <div class="arrow">⇄</div>
+      <div class="clock us">
+        <div class="zone">紐約 NEW YORK <span class="tag" id="usTag">--</span></div>
+        <div class="time" id="usTime">--:--:--</div>
+        <div class="date" id="usDate">----</div>
+      </div>
+    </div>
+
+    <div class="countdown" id="cd">載入中…</div>
+
+    <div class="section-title">交易時段調頻面板（台北時間軸）</div>
+    <div class="dial">
+      <div class="tracks" id="tracks">
+        <div class="dial-row">
+          <div class="dial-label tw">台股 TW</div>
+          <div class="track" id="twTrack"></div>
+        </div>
+        <div class="dial-row" style="margin-bottom: 0">
+          <div class="dial-label us">美股 US</div>
+          <div class="track" id="usTrack"></div>
+        </div>
+        <div class="nowline" id="nowline"><div class="lbl" id="nowlbl"></div></div>
+      </div>
+      <div class="axis" id="axis"></div>
+      <div class="legend">
+        <span><i class="dot" style="background: var(--tw)"></i>台股日盤</span>
+        <span><i class="dot" style="background: #c47e10"></i>台指期夜盤</span>
+        <span><i class="dot" style="background: #1e5f9e"></i>美股盤前/盤後</span>
+        <span><i class="dot" style="background: var(--us)"></i>美股盤中</span>
+        <span><i class="dot" style="background: var(--now)"></i>現在</span>
+      </div>
+    </div>
+
+    <div class="section-title">未來一週 · 台美重要行事曆</div>
+    <div class="cal" id="cal"></div>
+
+    <div class="foot" id="foot"></div>
+
+    <script>
+      // ============================================================
+      // 設定：填入免費 Finnhub key 後，自動載入「財報 / 經濟數據」
+      // 免費註冊 https://finnhub.io（財報日曆免費；經濟日曆視方案）
+      // ============================================================
+      const CONFIG = {
+        // 填入 Worker 網址 → key 隱藏 + 自動抓 BLS/Census .ics。留空 = 用本地 ics + 下方裸 key。
+        PROXY: "", // 例如 "https://market-proxy.你的子網域.workers.dev"
+        // 只有 PROXY 留空時才會用到（會曝光，故公開 repo 留空）。本機測試可暫時貼上。
+        FINNHUB_KEY: "",
+        EARNINGS_WATCH: ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA"],
+        // PROXY 有填：直接抓官方 .ics（Worker 穿 Akamai + 補 CORS）
+        ICS_REMOTE: [
+          "https://www.bls.gov/schedule/news_release/cpi.ics",
+          "https://www.bls.gov/schedule/news_release/ppi.ics",
+        ],
+        // PROXY 留空：改讀本地手動下載的 .ics（見 calendars/README.md）
+        ICS_FILES: ["./calendars/cpi.ics", "./calendars/ppi.ics", "./calendars/retail.ics"],
+      };
+
+      // FOMC 利率決議日（官方公告之會議第二天，無公式、僅能照 Fed 排程）。
+      const FOMC = {
+        2025: ["01-29", "03-19", "05-07", "06-18", "07-30", "09-17", "10-29", "12-10"],
+        2026: ["01-28", "03-18", "04-29", "06-17", "07-29", "09-16", "10-28", "12-09"],
+      };
+
+      // 沒有規則、又無免費來源的事件（CPI/PPI/零售…）手動補。複製格式即可。
+      const MANUAL_EVENTS = [
+        // { date: "2026-06-17", market: "us", type: "data", time: "08:30 ET", title: "🇺🇸 5月零售銷售" },
+        // { date: "2026-06-22", market: "tw", type: "data", time: "16:00", title: "🇹🇼 5月外銷訂單" },
+      ];
+
+      const US_CLOSED = new Set(); // YYYY-MM-DD，供倒數與三巫日調整使用
+      const WK = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+
+      // ---------- 時區工具（全部靠 Intl，DST 自動） ----------
+      function getOffset(timeZone, date) {
+        const tz = new Date(date.toLocaleString("en-US", { timeZone }));
+        const utc = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
+        return Math.round((tz - utc) / 60000) / 60;
+      }
+      function parts(date, timeZone) {
+        const f = new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }).formatToParts(date);
+        const o = {};
+        for (const p of f) o[p.type] = p.value;
+        if (o.hour === "24") o.hour = "00";
+        return o;
+      }
+      // 把某時區的牆上時間轉成正確的 UTC 瞬間（含 DST）
+      function zonedTimeToUtc(y, m, d, h, mi, tz) {
+        const guess = Date.UTC(y, m - 1, d, h, mi, 0);
+        const off = getOffset(tz, new Date(guess));
+        return new Date(guess - off * 3600000);
+      }
+      const pad = (n) => String(n).padStart(2, "0");
+      const ymd = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+
+      // 找出某年某時區的 DST 起訖日（純動態）
+      function dstRange(year, tz) {
+        let prev = null;
+        const res = {};
+        const d = new Date(Date.UTC(year, 0, 1, 12));
+        while (d.getUTCFullYear() === year) {
+          const off = getOffset(tz, d);
+          if (prev !== null && off !== prev) {
+            if (off > prev) res.start = new Date(d);
+            else res.end = new Date(d);
+          }
+          prev = off;
+          d.setUTCDate(d.getUTCDate() + 1);
+        }
+        return res;
+      }
+
+      // ---------- 雙時鐘 + 倒數 ----------
+      function tick() {
+        const now = new Date();
+        const tw = parts(now, "Asia/Taipei");
+        const us = parts(now, "America/New_York");
+
+        twTime.textContent = `${tw.hour}:${tw.minute}:${tw.second}`;
+        twDate.textContent = `${tw.year}/${tw.month}/${tw.day} ${
+          WK[new Date(`${tw.year}-${tw.month}-${tw.day}T00:00:00`).getDay()]
+        }`;
+        usTime.textContent = `${us.hour}:${us.minute}:${us.second}`;
+        usDate.textContent = `${us.year}/${us.month}/${us.day} ${
+          WK[new Date(`${us.year}-${us.month}-${us.day}T00:00:00`).getDay()]
+        }`;
+        usTag.textContent = new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          timeZoneName: "short",
+        })
+          .formatToParts(now)
+          .find((p) => p.type === "timeZoneName").value;
+
+        updateNowLine(tw);
+        updateCountdown(now);
+      }
+
+      function fmtDur(ms) {
+        let s = Math.max(0, Math.floor(ms / 1000));
+        const h = Math.floor(s / 3600);
+        s -= h * 3600;
+        const m = Math.floor(s / 60);
+        s -= m * 60;
+        return `${h} 小時 ${pad(m)} 分 ${pad(s)} 秒`;
+      }
+      function nextUsSession() {
+        const now = new Date();
+        const p = parts(now, "America/New_York");
+        const base = new Date(Date.UTC(+p.year, +p.month - 1, +p.day));
+        for (let i = 0; i < 9; i++) {
+          const d = new Date(base);
+          d.setUTCDate(d.getUTCDate() + i);
+          const y = d.getUTCFullYear(),
+            mo = d.getUTCMonth() + 1,
+            da = d.getUTCDate();
+          const dow = d.getUTCDay();
+          if (dow === 0 || dow === 6) continue;
+          if (US_CLOSED.has(ymd(y, mo, da))) continue;
+          const open = zonedTimeToUtc(y, mo, da, 9, 30, "America/New_York");
+          const close = zonedTimeToUtc(y, mo, da, 16, 0, "America/New_York");
+          if (now < open) return { state: "pre", target: open };
+          if (now < close) return { state: "open", target: close };
+        }
+        return null;
+      }
+      function updateCountdown(now) {
+        const s = nextUsSession();
+        if (!s) return;
+        if (s.state === "open") {
+          cd.innerHTML = `<span class="pill open">美股盤中</span> 距收盤 <b>${fmtDur(
+            s.target - now
+          )}</b>`;
+        } else {
+          cd.innerHTML = `<span class="pill pre">未開盤</span> 距美股開盤 <b>${fmtDur(
+            s.target - now
+          )}</b>`;
+        }
+      }
+
+      // ---------- 時間軸（軸起點 09:00，整個交易日不再跨午夜切斷） ----------
+      const AXIS_START = 9 * 60;
+      const rebase = (min) => (((min - AXIS_START) % 1440) + 1440) % 1440;
+      const pct = (min) => (min / 1440) * 100;
+      function addSeg(track, cls, startMin, endMin, label, sub) {
+        const dur = endMin - startMin;
+        const s0 = rebase(startMin);
+        const e0 = s0 + dur;
+        const pieces =
+          e0 > 1440 ? [[s0, 1440], [0, e0 - 1440]] : [[s0, e0]];
+        pieces.forEach(([s, e], i) => {
+          const d = document.createElement("div");
+          d.className = "seg " + cls;
+          d.style.left = pct(s) + "%";
+          d.style.width = pct(e - s) + "%";
+          if (i === 0)
+            d.innerHTML = `${label}${sub ? `<small>${sub}</small>` : ""}`;
+          track.appendChild(d);
+        });
+      }
+      function buildDial() {
+        const now = new Date();
+        twTrack.innerHTML = "";
+        usTrack.innerHTML = "";
+
+        addSeg(twTrack, "tw", 9 * 60, 13 * 60 + 30, "日盤", "09:00–13:30");
+        addSeg(twTrack, "tw night", 15 * 60, 24 * 60 + 5 * 60, "期貨夜盤", "15:00–05:00");
+
+        const diff =
+          getOffset("Asia/Taipei", now) - getOffset("America/New_York", now);
+        const shift = diff * 60;
+        const toTw = (m) => (((m + shift) % 1440) + 1440) % 1440;
+        const usSeg = (cls, a, b, label, sub) => {
+          let s = toTw(a),
+            e = toTw(b);
+          if (e <= s) e += 1440;
+          addSeg(usTrack, cls, s, e, label, sub);
+        };
+        usSeg("us-pre", 4 * 60, 9 * 60 + 30, "盤前", "04:00 ET");
+        usSeg("us-reg", 9 * 60 + 30, 16 * 60, "盤中", "09:30–16:00 ET");
+        usSeg("us-post", 16 * 60, 20 * 60, "盤後", "20:00 ET");
+
+        axis.innerHTML = "";
+        for (let o = 0; o <= 24; o += 3) {
+          const t = document.createElement("div");
+          t.className = "tick";
+          t.style.left = (o / 24) * 100 + "%";
+          t.textContent = pad((9 + o) % 24);
+          axis.appendChild(t);
+        }
+      }
+      function updateNowLine(tw) {
+        const min = +tw.hour * 60 + +tw.minute + +tw.second / 60;
+        nowline.style.left = pct(rebase(min)) + "%";
+        nowlbl.textContent = `${tw.hour}:${tw.minute}`;
+      }
+
+      // ---------- 行事曆資料來源 ----------
+      function easter(y) {
+        const a = y % 19,
+          b = Math.floor(y / 100),
+          c = y % 100,
+          d = Math.floor(b / 4),
+          e = b % 4,
+          f = Math.floor((b + 8) / 25),
+          g = Math.floor((b - f + 1) / 3),
+          h = (19 * a + b - d - g + 15) % 30,
+          i = Math.floor(c / 4),
+          k = c % 4,
+          l = (32 + 2 * e + 2 * i - h - k) % 7,
+          m = Math.floor((a + 11 * h + 22 * l) / 451),
+          mo = Math.floor((h + l - 7 * m + 114) / 31),
+          da = ((h + l - 7 * m + 114) % 31) + 1;
+        return new Date(Date.UTC(y, mo - 1, da));
+      }
+      function nthWeekday(y, m, weekday, n) {
+        // m: 1-12, weekday: 0=日…，回傳第 n 個
+        const first = new Date(Date.UTC(y, m - 1, 1));
+        let day = 1 + ((weekday - first.getUTCDay() + 7) % 7) + (n - 1) * 7;
+        return new Date(Date.UTC(y, m - 1, day));
+      }
+      function prevBusinessDay(d) {
+        const x = new Date(d);
+        do {
+          x.setUTCDate(x.getUTCDate() - 1);
+        } while (
+          x.getUTCDay() === 0 ||
+          x.getUTCDay() === 6 ||
+          US_CLOSED.has(ymd(x.getUTCFullYear(), x.getUTCMonth() + 1, x.getUTCDate()))
+        );
+        return x;
+      }
+
+      async function fetchHolidays(year) {
+        const NYSE_SKIP = ["Columbus Day", "Veterans Day", "Inauguration Day"];
+        const out = [];
+        try {
+          const us = await fetch(
+            `https://date.nager.at/api/v3/PublicHolidays/${year}/US`
+          ).then((r) => r.json());
+          for (const h of us) {
+            if (NYSE_SKIP.includes(h.name)) continue;
+            US_CLOSED.add(h.date);
+            out.push({ date: h.date, market: "us", type: "holiday", time: "休市", title: `🇺🇸 ${h.localName}` });
+          }
+        } catch (e) {}
+        // Good Friday：NYSE 休、美聯邦不放，Nager 不含，手動補
+        const gf = new Date(easter(year));
+        gf.setUTCDate(gf.getUTCDate() - 2);
+        const gfKey = ymd(gf.getUTCFullYear(), gf.getUTCMonth() + 1, gf.getUTCDate());
+        US_CLOSED.add(gfKey);
+        out.push({ date: gfKey, market: "us", type: "holiday", time: "休市", title: "🇺🇸 Good Friday" });
+        try {
+          const tw = await fetch(
+            `https://date.nager.at/api/v3/PublicHolidays/${year}/TW`
+          ).then((r) => r.json());
+          for (const h of tw)
+            out.push({ date: h.date, market: "tw", type: "holiday", time: "休市", title: `🇹🇼 ${h.localName}` });
+        } catch (e) {}
+        return out;
+      }
+
+      function computedEvents(year) {
+        const out = [];
+        // 三巫日：3/6/9/12 第三個週五，遇假日提前一個交易日
+        for (const m of [3, 6, 9, 12]) {
+          let f = nthWeekday(year, m, 5, 3);
+          const key0 = ymd(year, m, f.getUTCDate());
+          let d = f,
+            note = "三巫日結算";
+          if (US_CLOSED.has(key0)) {
+            d = prevBusinessDay(f);
+            note = "三巫日結算（遇假日提前）";
+          }
+          out.push({
+            date: ymd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()),
+            market: "us",
+            type: "derivative",
+            time: "盤中",
+            title: `🇺🇸 ${note}`,
+          });
+        }
+        // 台指期/選擇權結算：每月第三個週三
+        for (let m = 1; m <= 12; m++) {
+          const w = nthWeekday(year, m, 3, 3);
+          out.push({
+            date: ymd(year, m, w.getUTCDate()),
+            market: "tw",
+            type: "derivative",
+            time: "13:30",
+            title: "🇹🇼 台指期/選擇權結算",
+          });
+        }
+        // 非農就業：每月第一個週五 08:30 ET（規則明確）
+        for (let m = 1; m <= 12; m++) {
+          const nfp = nthWeekday(year, m, 5, 1);
+          out.push({ date: ymd(year, m, nfp.getUTCDate()), market: "us", type: "data", time: "08:30 ET", title: "🇺🇸 非農就業 (NFP)" });
+        }
+        // 初領失業金：每週四 08:30 ET（規則明確）
+        let th = nthWeekday(year, 1, 4, 1);
+        while (th.getUTCFullYear() === year) {
+          out.push({ date: ymd(year, th.getUTCMonth() + 1, th.getUTCDate()), market: "us", type: "data", time: "08:30 ET", title: "🇺🇸 初領失業金" });
+          th.setUTCDate(th.getUTCDate() + 7);
+        }
+        // FOMC（官方排程，無公式）
+        for (const day of FOMC[year] || [])
+          out.push({ date: `${year}-${day}`, market: "us", type: "data", time: "14:00 ET", title: "🇺🇸 FOMC 利率決議+記者會" });
+        return out;
+      }
+
+      // PROXY 有填 → 走 Worker（key 藏在後端）；否則直連 finnhub（需前端 key）
+      async function fhGet(path, params) {
+        let url;
+        if (CONFIG.PROXY) {
+          url = `${CONFIG.PROXY}/finnhub/${path}?${new URLSearchParams(params)}`;
+        } else {
+          if (!CONFIG.FINNHUB_KEY) return null;
+          url = `https://finnhub.io/api/v1/${path}?${new URLSearchParams({
+            ...params,
+            token: CONFIG.FINNHUB_KEY,
+          })}`;
+        }
+        try {
+          return await fetch(url).then((r) => (r.ok ? r.json() : null));
+        } catch (e) {
+          return null;
+        }
+      }
+      async function fetchFinnhub(from, to) {
+        if (!CONFIG.PROXY && !CONFIG.FINNHUB_KEY) return [];
+        const out = [];
+        const ec = await fhGet("calendar/economic", { from, to });
+        for (const e of (ec && ec.economicCalendar) || []) {
+          if (e.country !== "US" || e.impact === "low") continue;
+          out.push({ date: e.time.slice(0, 10), market: "us", type: "data", time: e.time.slice(11, 16), title: `🇺🇸 ${e.event}` });
+        }
+        const er = await fhGet("calendar/earnings", { from, to });
+        for (const e of (er && er.earningsCalendar) || []) {
+          if (!CONFIG.EARNINGS_WATCH.includes(e.symbol)) continue;
+          out.push({ date: e.date, market: "us", type: "earnings", time: e.hour === "bmo" ? "盤前" : e.hour === "amc" ? "盤後" : "", title: `🇺🇸 ${e.symbol} 財報` });
+        }
+        const ip = await fhGet("calendar/ipo", { from, to });
+        for (const e of (ip && ip.ipoCalendar) || []) {
+          if (!["NYSE", "NASDAQ"].includes((e.exchange || "").toUpperCase())) continue;
+          out.push({ date: e.date, market: "us", type: "earnings", time: "IPO", title: `🇺🇸 ${e.symbol} 上市 ${e.name}` });
+        }
+        return out;
+      }
+
+      // ---------- BLS/Census 本地 iCal（同源讀取，免 CORS） ----------
+      function parseIcs(txt) {
+        const lines = txt.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").split(/\r?\n/);
+        const out = [];
+        let cur = null;
+        for (const ln of lines) {
+          if (ln === "BEGIN:VEVENT") cur = {};
+          else if (ln === "END:VEVENT") {
+            if (cur && cur.date)
+              out.push({ date: cur.date, market: "us", type: "data", time: cur.time || "", title: `🇺🇸 ${cur.summary || "BLS"}` });
+            cur = null;
+          } else if (cur) {
+            const i = ln.indexOf(":");
+            if (i < 0) continue;
+            const name = ln.slice(0, i).split(";")[0];
+            const val = ln.slice(i + 1);
+            if (name === "DTSTART") {
+              const m = val.match(/(\d{4})(\d{2})(\d{2})(T(\d{2})(\d{2}))?/);
+              if (m) {
+                cur.date = `${m[1]}-${m[2]}-${m[3]}`;
+                if (m[5]) cur.time = `${m[5]}:${m[6]} ET`;
+              }
+            } else if (name === "SUMMARY") {
+              cur.summary = val.replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\n/g, " ");
+            }
+          }
+        }
+        return out;
+      }
+      async function fetchIcs() {
+        // PROXY 有填 → Worker 抓官方 .ics；否則讀本地手動下載的 .ics
+        const sources = CONFIG.PROXY
+          ? CONFIG.ICS_REMOTE.map(
+              (u) => `${CONFIG.PROXY}/ics?u=${encodeURIComponent(u)}`
+            )
+          : CONFIG.ICS_FILES;
+        const out = [];
+        for (const url of sources) {
+          try {
+            const txt = await fetch(url).then((r) => (r.ok ? r.text() : null));
+            if (txt) out.push(...parseIcs(txt));
+          } catch (e) {}
+        }
+        return out;
+      }
+
+      // ---------- 渲染行事曆 ----------
+      async function buildCal() {
+        const now = new Date();
+        const tw = parts(now, "Asia/Taipei");
+        const start = new Date(`${tw.year}-${tw.month}-${tw.day}T00:00:00`);
+        const keys = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          keys.push(ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()));
+        }
+        const years = [...new Set(keys.map((k) => +k.slice(0, 4)))];
+
+        let evs = [];
+        for (const y of years) evs = evs.concat(await fetchHolidays(y)); // 先填 US_CLOSED
+        for (const y of years) evs = evs.concat(computedEvents(y));
+        evs = evs.concat(await fetchFinnhub(keys[0], keys[6]));
+        evs = evs.concat(await fetchIcs());
+        evs = evs.concat(MANUAL_EVENTS);
+
+        const byDate = {};
+        for (const e of evs) (byDate[e.date] ||= []).push(e);
+
+        cal.innerHTML = "";
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          const key = keys[i];
+          const list = (byDate[key] || []).sort((a, b) =>
+            (a.time || "").localeCompare(b.time || "")
+          );
+          const weekend = d.getDay() === 0 || d.getDay() === 6;
+          const closed = list.some((e) => e.type === "holiday");
+
+          const box = document.createElement("div");
+          box.className =
+            "day" + (i === 0 ? " today" : "") + (closed ? " closed" : "");
+          let html = `<div class="dnum">${d.getDate()}</div><div class="dwk">${
+            d.getMonth() + 1
+          }月 ${WK[d.getDay()]}</div>`;
+          if (!list.length)
+            html += `<div class="ev"><span class="t">${
+              weekend ? "週末休市" : "—"
+            }</span></div>`;
+          for (const e of list)
+            html += `<div class="ev ${e.type === "holiday" ? "holiday " : ""}${
+              e.market
+            }"><span class="t">${e.time || ""}</span> ${e.title}</div>`;
+          box.innerHTML = html;
+          cal.appendChild(box);
+        }
+      }
+
+      // ---------- footer（DST 動態） ----------
+      function buildFoot() {
+        const y = new Date().getFullYear();
+        const us = dstRange(y, "America/New_York");
+        const fmt = (d) =>
+          d ? `${d.getUTCMonth() + 1}/${d.getUTCDate()}` : "—";
+        const diff =
+          getOffset("Asia/Taipei", new Date()) -
+          getOffset("America/New_York", new Date());
+        foot.innerHTML =
+          `${y} 美東夏令時間（EDT）：<b>${fmt(us.start)} – ${fmt(us.end)}</b>（由瀏覽器時區庫動態判定，每年自動更新）。目前台北快美東 ${diff} 小時。<br/>` +
+          "資料來源：假日 date.nager.at（NYSE/TWSE）、財報/IPO Finnhub。規則性事件程式計算：三巫日、台指期結算、非農(首週五)、初領失業金(每週四)。無規則事件照官方排程：FOMC。Finnhub 免費方案不含經濟日曆；CPI/PPI/零售改用 BLS/Census 官方 iCal（放 calendars/，同源讀取，詳見該資料夾 README）。時刻 ET=美東當地，會自動隨 DST。";
+      }
+
+      // ---------- init ----------
+      const $ = (id) => document.getElementById(id);
+      for (const id of ["twTime","twDate","usTime","usDate","usTag","cd","twTrack","usTrack","axis","nowline","nowlbl","cal","foot"])
+        window[id] = $(id);
+
+      buildDial();
+      buildFoot();
+      buildCal();
+      tick();
+      setInterval(tick, 1000);
+    </script>
+  </body>
+</html>

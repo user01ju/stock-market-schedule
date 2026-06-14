@@ -1,0 +1,6 @@
+name = "market-proxy"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+
+# FINNHUB_KEY 不要寫在這裡（會進 git）。用 secret：
+#   npx wrangler secret put FINNHUB_KEY
