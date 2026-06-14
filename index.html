@@ -496,7 +496,7 @@
         <rect x="3" y="5" width="18" height="16" rx="2" />
         <path d="M3 9.5h18M8 3v4M16 3v4" />
       </svg>
-      未來一週 · 台美重要行事曆
+      未來兩週 · 台美重要行事曆
     </div>
     <div class="cal" id="cal"></div>
 
@@ -992,8 +992,9 @@
         const now = new Date();
         const tw = parts(now, "Asia/Taipei");
         const start = new Date(`${tw.year}-${tw.month}-${tw.day}T00:00:00`);
+        const DAYS = 14;
         const keys = [];
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < DAYS; i++) {
           const d = new Date(start);
           d.setDate(d.getDate() + i);
           keys.push(ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()));
@@ -1003,7 +1004,7 @@
         let evs = [];
         for (const y of years) evs = evs.concat(await fetchHolidays(y)); // 先填 US_CLOSED
         for (const y of years) evs = evs.concat(computedEvents(y));
-        evs = evs.concat(await fetchFinnhub(keys[0], keys[6]));
+        evs = evs.concat(await fetchFinnhub(keys[0], keys[DAYS - 1]));
         evs = evs.concat(await fetchIcs());
         evs = evs.concat(MANUAL_EVENTS);
 
@@ -1011,7 +1012,7 @@
         for (const e of evs) (byDate[e.date] ||= []).push(e);
 
         cal.innerHTML = "";
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < DAYS; i++) {
           const d = new Date(start);
           d.setDate(d.getDate() + i);
           const key = keys[i];
