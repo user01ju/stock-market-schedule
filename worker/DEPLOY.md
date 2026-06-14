@@ -1,5 +1,8 @@
 # 部署 market-proxy（Cloudflare Worker）
 
+> **現況：已部署** `https://market-proxy.slowdrive.workers.dev`，`index.html` 的 `CONFIG.PROXY` 已填。
+> 以下為重新部署 / 換帳號時的步驟。
+
 免費方案 10 萬次/天，個人用綽綽有餘。需要一個 Cloudflare 帳號（免費）。
 
 ## 步驟
@@ -24,9 +27,9 @@ PROXY: "https://market-proxy.你的子網域.workers.dev",
 
 填了之後：
 
-- 財報/IPO 走 `PROXY/finnhub/...`，key 留在 Worker，前端原始碼不再有 key。
-- CPI/PPI/零售走 `PROXY/ics?u=...`，由 Worker 帶瀏覽器 headers 抓官方 .ics，自動補 CORS。
-- `CONFIG.ICS_REMOTE` 列出要抓的官方 .ics 網址（只允許 bls.gov / census.gov）。
+- 財報/IPO 走 `PROXY/finnhub/...`，key 留在 Worker，前端原始碼不再有 key。✅ 實測可用
+- `/ics?u=...` 端點仍保留（Worker 帶瀏覽器 headers + 補 CORS），但 **BLS 實測被 Akamai 擋**（見下方結論）；
+  CPI/PPI 改走本地 `calendars/bls.ics`。`CONFIG.ICS_REMOTE` 僅在來源非 Akamai 時才有意義。
 
 ## 驗證
 
