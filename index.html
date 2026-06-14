@@ -795,17 +795,27 @@
         return out;
       }
       async function fetchIcs() {
-        // PROXY 有填 → Worker 抓官方 .ics；否則讀本地手動下載的 .ics
-        const sources = CONFIG.PROXY
-          ? CONFIG.ICS_REMOTE.map(
+        // 兩條都試：Worker 抓官方 .ics（BLS 常被 Akamai 擋）+ 本地手動下載的 .ics（後備）。
+        const urls = [];
+        if (CONFIG.PROXY)
+          urls.push(
+            ...CONFIG.ICS_REMOTE.map(
               (u) => `${CONFIG.PROXY}/ics?u=${encodeURIComponent(u)}`
             )
-          : CONFIG.ICS_FILES;
+          );
+        urls.push(...CONFIG.ICS_FILES);
         const out = [];
-        for (const url of sources) {
+        const seen = new Set();
+        for (const url of urls) {
           try {
             const txt = await fetch(url).then((r) => (r.ok ? r.text() : null));
-            if (txt) out.push(...parseIcs(txt));
+            if (!txt || !txt.includes("VEVENT")) continue;
+            for (const e of parseIcs(txt)) {
+              const k = e.date + e.title;
+              if (seen.has(k)) continue;
+              seen.add(k);
+              out.push(e);
+            }
           } catch (e) {}
         }
         return out;
